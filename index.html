@@ -124,8 +124,13 @@ header::before{
 .score-badge{
   background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
   border-radius:50px;padding:8px 20px;text-align:center;backdrop-filter:blur(8px);
+  cursor:default;
 }
-.score-badge .sn{font-family:'DM Serif Display',serif;font-size:26px;color:#fff;line-height:1;}
+.score-badge .sn{
+  font-family:'DM Serif Display',serif;font-size:26px;color:#fff;line-height:1;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.score-badge .sn.bump{transform:scale(1.18);}
 .score-badge .sl{font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:1px;}
 #darkBtn{
   width:38px;height:38px;border-radius:50%;
@@ -144,9 +149,16 @@ header::before{
   background:var(--surface);border-radius:var(--r);
   padding:13px 18px;display:flex;align-items:center;gap:12px;
   box-shadow:var(--shadow);border:1px solid var(--border);
+  cursor:pointer;transition:border-color .2s;
 }
-.qcard .qi{font-size:18px;}
-#quoteText{font-size:13px;color:var(--text2);font-style:italic;line-height:1.5;flex:1;}
+.qcard:hover{border-color:var(--accent);}
+.qcard .qi{font-size:18px;flex-shrink:0;}
+#quoteText{
+  font-size:13px;color:var(--text2);font-style:italic;line-height:1.5;flex:1;
+  transition:opacity .3s;
+}
+#quoteText.fade{opacity:0;}
+.qtap{font-size:10px;color:var(--border);flex-shrink:0;}
 
 /* ═══════════════════════════════════════════
    LAYOUT
@@ -182,6 +194,15 @@ header::before{
   font-family:'DM Serif Display',serif;font-size:17px;
   color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px;
 }
+/* UI ENHANCEMENT: card-title right-side badge */
+.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title-row .card-title{margin-bottom:0;}
+.count-badge{
+  font-size:11px;font-weight:600;color:var(--accent);
+  background:var(--pill-bg);border:1px solid rgba(29,158,117,.2);
+  border-radius:20px;padding:2px 10px;
+}
+
 .divider{height:1px;background:var(--border);margin:14px 0;}
 .field-lbl{
   display:block;font-size:11px;font-weight:600;color:var(--text2);
@@ -228,6 +249,10 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 .trow input{display:none;}
 .tlabel{font-size:13.5px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px;flex:1;}
 .tlabel .em{font-size:15px;}
+
+/* UI ENHANCEMENT: strikethrough text on completed advice */
+.trow.on .tlabel.strike{text-decoration:line-through;color:var(--text2);}
+
 .streak{
   font-size:11px;font-weight:600;color:var(--accent3);
   background:rgba(245,158,11,.12);border-radius:20px;
@@ -278,10 +303,13 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 .gbtn::before{
   content:'';position:absolute;bottom:0;left:0;right:0;height:0%;
   background:linear-gradient(0deg,#60c4ffaa,#38b2f055);
-  transition:height .3s;border-radius:0 0 6px 6px;
+  transition:height .35s cubic-bezier(.4,0,.2,1);border-radius:0 0 6px 6px;
 }
 .gbtn.filled::before{height:100%;}
 .gbtn.filled{border-color:#38b2f0;}
+/* UI ENHANCEMENT: ripple pop on glass fill */
+.gbtn.filled{animation:glassPop .25s ease;}
+@keyframes glassPop{0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
 .gbtn span{position:relative;z-index:1;}
 
 /* ═══════════════════════════════════════════
@@ -369,7 +397,12 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 .ring-wrap{display:flex;flex-direction:column;align-items:center;padding:6px 0;}
 .ring{width:104px;height:104px;position:relative;display:flex;align-items:center;justify-content:center;}
 .ring svg{position:absolute;inset:0;transform:rotate(-90deg);}
-.ring-num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);position:relative;z-index:1;}
+.ring-num{
+  font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);
+  position:relative;z-index:1;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.ring-num.bump{transform:scale(1.15);}
 .ring-lbl{font-size:12px;color:var(--text2);margin-top:8px;font-weight:500;}
 .ring-sub{font-size:11px;color:var(--accent);margin-top:3px;text-align:center;padding:0 8px;}
 .breakdown{margin-top:14px;display:flex;flex-direction:column;gap:7px;}
@@ -449,9 +482,11 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 
 <!-- ══════════ QUOTE ══════════ -->
 <div class="qwrap">
-  <div class="qcard">
+  <!-- UI ENHANCEMENT: tap to refresh quote -->
+  <div class="qcard" id="quoteCard" title="Tap for a new quote">
     <span class="qi">✨</span>
     <div id="quoteText">Loading your daily inspiration…</div>
+    <span class="qtap">tap ↻</span>
   </div>
 </div>
 
@@ -494,7 +529,11 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 
   <!-- HABITS -->
   <div class="card">
-    <div class="card-title">🌿 Daily Habits</div>
+    <!-- UI ENHANCEMENT: habit count badge in title -->
+    <div class="card-title-row">
+      <div class="card-title">🌿 Daily Habits</div>
+      <span class="count-badge" id="habitCountBadge">0 / 0</span>
+    </div>
     <label class="field-lbl">Pick emoji for new habit</label>
     <div class="emoji-picker" id="emojiPicker"></div>
     <div class="habit-add-row">
@@ -567,7 +606,11 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
     <label class="field-lbl">Observations</label>
     <textarea id="observe"  placeholder="Patterns, insights, things to remember…"></textarea>
     <div class="divider"></div>
-    <div class="card-title" style="font-size:14px;margin-bottom:10px;">📋 Advice Checklist</div>
+    <!-- UI ENHANCEMENT: advice count badge -->
+    <div class="card-title-row" style="margin-bottom:10px;">
+      <div class="card-title" style="font-size:14px;margin-bottom:0;">📋 Advice Checklist</div>
+      <span class="count-badge" id="adviceCountBadge">0 / 0</span>
+    </div>
     <div class="tgrid" id="adviceList"></div>
     <div class="adv-add-row">
       <input type="text" id="newAdvice" placeholder="Add new advice item…" onkeydown="if(event.key==='Enter')addAdvice()"/>
@@ -634,7 +677,7 @@ textarea::placeholder,input::placeholder{color:var(--text2);}
 ══════════════════════════════════════ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, update, onValue, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, update, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /* ── FIREBASE ───────────────────────── */
 const FB = {
@@ -680,6 +723,15 @@ function hideLoader(){
   l.classList.add("hide");
   setTimeout(()=>l.remove(),500);
 }
+/* UI ENHANCEMENT: bounce animation on score change */
+function bumpEl(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.remove("bump");
+  void el.offsetWidth; // reflow
+  el.classList.add("bump");
+  setTimeout(()=>el.classList.remove("bump"),350);
+}
 
 /* ── QUOTES ─────────────────────────── */
 const QUOTES=[
@@ -694,7 +746,19 @@ const QUOTES=[
   "Tough days are part of the journey, not the destination.",
   "Be proud of how far you've come, even on hard days. 🌸"
 ];
-document.getElementById("quoteText").textContent=QUOTES[new Date().getDay()%QUOTES.length];
+let quoteIndex = new Date().getDay() % QUOTES.length;
+document.getElementById("quoteText").textContent = QUOTES[quoteIndex];
+
+/* UI ENHANCEMENT: tap quote card to cycle quotes with fade */
+document.getElementById("quoteCard").onclick = () => {
+  const el = document.getElementById("quoteText");
+  el.classList.add("fade");
+  setTimeout(()=>{
+    quoteIndex = (quoteIndex + 1) % QUOTES.length;
+    el.textContent = QUOTES[quoteIndex];
+    el.classList.remove("fade");
+  }, 300);
+};
 
 /* ── DARK MODE ──────────────────────── */
 const darkBtn=document.getElementById("darkBtn");
@@ -747,8 +811,7 @@ document.getElementById("installDismiss").onclick=()=>{
 };
 
 /* ══════════════════════════════════════
-   HABITS — saved in Firebase under
-   kanmani-v15/habitDefs
+   HABITS
 ══════════════════════════════════════ */
 const DEFAULT_HABITS=[
   {key:"yoga",     emoji:"🧘",label:"Yoga"},
@@ -780,7 +843,6 @@ function initEmojiPicker(){
 }
 initEmojiPicker();
 
-/* Load habit DEFINITIONS from Firebase — live listener */
 function listenHabitDefs(){
   if(unsubscribeHabits) unsubscribeHabits();
   unsubscribeHabits=onValue(ref(db,`${ROOM}/habitDefs`),snap=>{
@@ -789,7 +851,6 @@ function listenHabitDefs(){
       habitDefs=[...d];
     } else {
       habitDefs=[...DEFAULT_HABITS];
-      // save defaults to Firebase so they exist
       set(ref(db,`${ROOM}/habitDefs`), habitDefs);
     }
     renderHabits(habitState);
@@ -815,7 +876,6 @@ function removeHabit(key,label){
   habitDefs=habitDefs.filter(h=>h.key!==key);
   delete habitState[key];
   saveHabitDefs();
-  // remove from today's Firebase data
   update(ref(db,`${ROOM}/${selectedDate}/habits`),{[key]:null});
   toast(`🗑️ "${label}" removed`);
 }
@@ -837,7 +897,7 @@ function renderHabits(saved){
       <input type="checkbox" ${checked?"checked":""}/>
       <span class="tlabel"><span class="em">${h.emoji}</span>${h.label}</span>
       <span class="streak" id="streak_${h.key}"></span>
-      <button class="del-btn" title="Remove">✕</button>
+      <button class="del-btn" title="Remove habit">✕</button>
       <span class="pswitch"></span>
     `;
     row.onclick=(e)=>{
@@ -847,7 +907,8 @@ function renderHabits(saved){
       cb.checked=!cb.checked;
       habitState[h.key]=cb.checked;
       row.classList.toggle("on",cb.checked);
-      sync(`habits/${h.key}`,cb.checked);
+      /* ── BUG 1 FIX: use set() on the specific habit key, not update() ── */
+      set(ref(db,`${ROOM}/${selectedDate}/habits/${h.key}`), cb.checked);
       updateHabitBar();
     };
     row.querySelector(".del-btn").onclick=(e)=>{
@@ -862,8 +923,11 @@ function renderHabits(saved){
 
 function updateHabitBar(){
   const total=habitDefs.length;
-  if(total===0){setBar("habitBar","habitPct",0);recalcScore();return;}
+  /* UI ENHANCEMENT: update habit count badge */
   const done=habitDefs.filter(h=>habitState[h.key]).length;
+  const badge=document.getElementById("habitCountBadge");
+  if(badge) badge.textContent=`${done} / ${total}`;
+  if(total===0){setBar("habitBar","habitPct",0);recalcScore();return;}
   setBar("habitBar","habitPct",Math.round((done/total)*100));
   recalcScore();
 }
@@ -951,7 +1015,11 @@ function renderGlasses(count){
     b.className="gbtn"+(i<=waterCount?" filled":"");
     b.innerHTML="<span>💧</span>";
     b.title=`${i} glass${i>1?"es":""}`;
-    b.onclick=()=>{ waterCount=i; renderGlasses(waterCount); sync("water",waterCount); };
+    b.onclick=()=>{
+      waterCount=i;
+      renderGlasses(waterCount);
+      set(ref(db,`${ROOM}/${selectedDate}/water`), waterCount);
+    };
     grid.appendChild(b);
   }
   document.getElementById("waterLbl").textContent=
@@ -991,40 +1059,89 @@ function updateTherBar(){
 }
 
 /* ══════════════════════════════════════
-   ADVICE
+   ADVICE — BUG 2 FIX: added delete button + remove() call
 ══════════════════════════════════════ */
 window.addAdvice=function(){
   const v=document.getElementById("newAdvice").value.trim();
   if(!v) return;
-  sync(`advice/${Date.now()}`,{text:v,done:false});
+  const key = Date.now().toString();
+  set(ref(db,`${ROOM}/${selectedDate}/advice/${key}`), {text:v, done:false});
   document.getElementById("newAdvice").value="";
   toast("📌 Advice added!");
 };
+
 function renderAdvice(d){
   const box=document.getElementById("adviceList");
   box.innerHTML="";
-  if(!d){setBar("therBar","therPct",0);return;}
-  const keys=Object.keys(d);let done=0;
+  const badge=document.getElementById("adviceCountBadge");
+  if(!d){
+    setBar("therBar","therPct",0);
+    if(badge) badge.textContent="0 / 0";
+    return;
+  }
+  const keys=Object.keys(d);
+  let done=0;
   keys.forEach(id=>{
     const item=d[id];
     const row=document.createElement("div");
     row.className="trow"+(item.done?" on":"");
-    row.innerHTML=`
-      <input type="checkbox" ${item.done?"checked":""}/>
-      <span class="tlabel"><span class="em">📌</span>${item.text}</span>
-      <span class="pswitch"></span>
-    `;
+
+    const label=document.createElement("span");
+    /* UI ENHANCEMENT: strikethrough on completed advice */
+    label.className="tlabel"+(item.done?" strike":"");
+    label.innerHTML=`<span class="em">📌</span>${item.text}`;
+
+    const sw=document.createElement("span");
+    sw.className="pswitch";
+
+    /* BUG 2 FIX: delete button for advice */
+    const delBtn=document.createElement("button");
+    delBtn.className="del-btn";
+    delBtn.title="Delete advice";
+    delBtn.textContent="✕";
+    delBtn.onclick=(e)=>{
+      e.stopPropagation();
+      if(!confirm(`Delete "${item.text}"?`)) return;
+      remove(ref(db,`${ROOM}/${selectedDate}/advice/${id}`));
+      toast("🗑️ Advice deleted");
+    };
+
+    row.appendChild(document.createElement("input")); // hidden checkbox
+    row.querySelector("input").type="checkbox";
+    row.querySelector("input").checked=item.done;
+    row.appendChild(label);
+    row.appendChild(delBtn);
+    row.appendChild(sw);
+
     row.onclick=(e)=>{
+      if(e.target===delBtn || e.target.closest(".del-btn")) return;
       e.preventDefault();
       const cb=row.querySelector("input");
       cb.checked=!cb.checked;
       row.classList.toggle("on",cb.checked);
-      sync(`advice/${id}`,{text:item.text,done:cb.checked});
+      label.classList.toggle("strike", cb.checked);
+      set(ref(db,`${ROOM}/${selectedDate}/advice/${id}`),{text:item.text,done:cb.checked});
+      updateAdviceBadge(box);
     };
+
     box.appendChild(row);
     if(item.done) done++;
   });
+
+  /* UI ENHANCEMENT: update advice count badge */
+  if(badge) badge.textContent=`${done} / ${keys.length}`;
   const pct=keys.length>0?Math.round((done/keys.length)*100):0;
+  setBar("therBar","therPct",pct);
+  recalcScore();
+}
+
+function updateAdviceBadge(box){
+  const rows=[...box.querySelectorAll(".trow")];
+  const total=rows.length;
+  const done=rows.filter(r=>r.classList.contains("on")).length;
+  const badge=document.getElementById("adviceCountBadge");
+  if(badge) badge.textContent=`${done} / ${total}`;
+  const pct=total>0?Math.round((done/total)*100):0;
   setBar("therBar","therPct",pct);
   recalcScore();
 }
@@ -1052,6 +1169,7 @@ function initBreakdown(){
 }
 initBreakdown();
 
+let lastScore = -1;
 function recalcScore(){
   const goalPct   = document.getElementById("goalDone").checked?100:0;
   const hTotal    = habitDefs.length;
@@ -1076,6 +1194,13 @@ function recalcScore(){
   document.getElementById("headerScore").textContent=total+"%";
   document.getElementById("scoreCircle").style.strokeDashoffset=263.9-(total/100)*263.9;
 
+  /* UI ENHANCEMENT: bounce score ring when score changes */
+  if(total !== lastScore){
+    bumpEl("scoreNum");
+    bumpEl("headerScore");
+    lastScore=total;
+  }
+
   const msgs=[[0,"Start your day! 🌅"],[20,"Good start! Keep going 💪"],[40,"Building momentum! 🌱"],[60,"Great progress! 🌟"],[80,"Almost perfect! Amazing 🎉"],[100,"Perfect wellness day! 🏆"]];
   document.getElementById("scoreMsg").textContent=[...msgs].reverse().find(([m])=>total>=m)[1];
 
@@ -1097,7 +1222,6 @@ async function loadCalendarData(){
     const all=snap.val()||{};
     calendarCache={};
     Object.keys(all).forEach(ds=>{
-      // only mark date keys (format YYYY-MM-DD)
       if(/^\d{4}-\d{2}-\d{2}$/.test(ds)) calendarCache[ds]=true;
     });
     renderCalendar();
@@ -1170,7 +1294,7 @@ function listenDay(){
     const mc=["m1","m2","m3"].filter(id=>document.getElementById(id).checked).length;
     setBar("medBar","medPct",Math.round((mc/3)*100));
 
-    /* HABITS — merge with current defs */
+    /* HABITS */
     renderHabits(d?.habits||{});
 
     /* MOOD */
@@ -1193,7 +1317,6 @@ function listenDay(){
     /* ADVICE */
     renderAdvice(d?.advice||null);
 
-    /* update green dot for this date */
     calendarCache[selectedDate]=!!d;
     renderCalendar();
 
@@ -1205,9 +1328,9 @@ function listenDay(){
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-listenHabitDefs();   // 🔥 habits from Firebase
-loadCalendarData();  // green dots
-listenDay();         // today's data
+listenHabitDefs();
+loadCalendarData();
+listenDay();
 </script>
 </body>
 </html>
